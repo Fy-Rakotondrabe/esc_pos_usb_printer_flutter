@@ -9,15 +9,13 @@ import com.dantsu.escposprinter.exceptions.EscPosConnectionException
 import com.dantsu.escposprinter.exceptions.EscPosEncodingException
 import com.dantsu.escposprinter.exceptions.EscPosParserException
 import com.example.print.async.AsyncEscPosPrint.PrinterStatus
-import io.flutter.plugin.common.MethodChannel
 import java.lang.ref.WeakReference
+import io.flutter.plugin.common.MethodChannel
 
-abstract class AsyncEscPosPrint
-@JvmOverloads
-constructor(
-        context: Context,
-        onPrintFinished: OnPrintFinished? = null,
-        methodChannel: MethodChannel,
+abstract class AsyncEscPosPrint @JvmOverloads constructor(
+    context: Context,
+    onPrintFinished: OnPrintFinished? = null,
+    methodChannel: MethodChannel,
 ) : AsyncTask<AsyncEscPosPrinter?, Int?, PrinterStatus>() {
     protected var weakContext: WeakReference<Context>
     protected var onPrintFinished: OnPrintFinished?
@@ -37,21 +35,19 @@ constructor(
             publishProgress(PROGRESS_CONNECTING)
             val printerData = printersData[0]
             try {
-                val deviceConnection =
-                        printerData?.printerConnection
-                                ?: return PrinterStatus(null, FINISH_NO_PRINTER)
-                val printer =
-                        EscPosPrinter(
-                                deviceConnection,
-                                printerData.printerDpi,
-                                printerData.printerWidthMM,
-                                printerData.printerNbrCharactersPerLine,
-                                EscPosCharsetEncoding("windows-1252", 16)
-                        )
+                val deviceConnection = printerData?.printerConnection
+                    ?: return PrinterStatus(null, FINISH_NO_PRINTER)
+                val printer = EscPosPrinter(
+                    deviceConnection,
+                    printerData.printerDpi,
+                    printerData.printerWidthMM,
+                    printerData.printerNbrCharactersPerLine,
+                    EscPosCharsetEncoding("windows-1252", 16)
+                )
 
                 // printer.useEscAsteriskCommand(true);
                 publishProgress(PROGRESS_PRINTING)
-                val textsToPrint = printerData?.textsToPrint ?: arrayOf()
+                val textsToPrint = printerData?.textsToPrint ?: arrayOf();
                 for (textToPrint in textsToPrint) {
                     printer.printFormattedTextAndCut(textToPrint)
                     Thread.sleep(500)
@@ -74,7 +70,7 @@ constructor(
             }
             return PrinterStatus(printerData, FINISH_SUCCESS)
         }
-        return null
+        return null;
     }
 
     override fun onPreExecute() {
@@ -83,51 +79,41 @@ constructor(
     }
 
     protected override fun onProgressUpdate(vararg progress: Int?) {
-        val progressValue = progress[0] ?: 0 // Use 0 as the default if progress[0] is null
+        val progressValue = progress[0] ?: 0  // Use 0 as the default if progress[0] is null
 
         when (progressValue) {
-            PROGRESS_CONNECTING ->
-                    methodChannel?.invokeMethod("printProgress", "Connecting printer...")
-            PROGRESS_CONNECTED ->
-                    methodChannel?.invokeMethod("printProgress", "Printer is connected...")
-            PROGRESS_PRINTING ->
-                    methodChannel?.invokeMethod("printProgress", "Printer is printing...")
-            PROGRESS_PRINTED ->
-                    methodChannel?.invokeMethod("printProgress", "Printer has finished...")
+            PROGRESS_CONNECTING -> methodChannel?.invokeMethod("printProgress", "Connecting printer...")
+            PROGRESS_CONNECTED -> methodChannel?.invokeMethod("printProgress", "Printer is connected...")
+            PROGRESS_PRINTING -> methodChannel?.invokeMethod("printProgress", "Printer is printing...")
+            PROGRESS_PRINTED -> methodChannel?.invokeMethod("printProgress", "Printer has finished...")
         }
     }
 
+
     override fun onPostExecute(result: PrinterStatus) {
-        methodChannel?.invokeMethod("dismissDialog", "Pop navigator")
         val context = weakContext.get() ?: return
 
-        val printerStatusMessage =
-                when (result.printerStatus) {
-                    FINISH_SUCCESS -> "Success"
-                    FINISH_NO_PRINTER -> "No printer"
-                    FINISH_PRINTER_DISCONNECTED -> "Broken connection"
-                    FINISH_PARSER_ERROR -> "Invalid formatted text"
-                    FINISH_ENCODING_ERROR -> "Bad selected encoding"
-                    FINISH_BARCODE_ERROR -> "Invalid barcode"
-                    else -> "Unknown error"
-                }
+        val printerStatusMessage = when (result.printerStatus) {
+            FINISH_SUCCESS -> "Success"
+            FINISH_NO_PRINTER -> "No printer"
+            FINISH_PRINTER_DISCONNECTED -> "Broken connection"
+            FINISH_PARSER_ERROR -> "Invalid formatted text"
+            FINISH_ENCODING_ERROR -> "Bad selected encoding"
+            FINISH_BARCODE_ERROR -> "Invalid barcode"
+            else -> "Unknown error"
+        }
 
-        val resultMessage =
-                when (result.printerStatus) {
-                    FINISH_SUCCESS -> "Congratulation! The texts are printed!"
-                    FINISH_NO_PRINTER -> "The application can't find any printer connected."
-                    FINISH_PRINTER_DISCONNECTED -> "Unable to connect the printer."
-                    FINISH_PARSER_ERROR -> "It seems to be an invalid syntax problem."
-                    FINISH_ENCODING_ERROR -> "The selected encoding character returning an error."
-                    FINISH_BARCODE_ERROR ->
-                            "Data sent to be converted to barcode or QR code seems to be invalid."
-                    else -> ""
-                }
+        val resultMessage = when (result.printerStatus) {
+            FINISH_SUCCESS -> "Congratulation! The texts are printed!"
+            FINISH_NO_PRINTER -> "The application can't find any printer connected."
+            FINISH_PRINTER_DISCONNECTED -> "Unable to connect the printer."
+            FINISH_PARSER_ERROR -> "It seems to be an invalid syntax problem."
+            FINISH_ENCODING_ERROR -> "The selected encoding character returning an error."
+            FINISH_BARCODE_ERROR -> "Data sent to be converted to barcode or QR code seems to be invalid."
+            else -> ""
+        }
 
-        methodChannel?.invokeMethod(
-                "printResult",
-                mapOf("status" to printerStatusMessage, "message" to resultMessage)
-        )
+        methodChannel?.invokeMethod("printResult", mapOf("status" to printerStatusMessage, "message" to resultMessage))
 
         if (onPrintFinished != null) {
             if (result.printerStatus == FINISH_SUCCESS) {

@@ -34,38 +34,13 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  bool isModal = false;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _platform.setMethodCallHandler((call) async {
-      if (call.method == 'dismissDialog') {
-        Navigator.of(context).pop();
-      } else if (call.method == 'printProgress') {
-        showProgressDialog(context, call.arguments);
-      } else if (call.method == 'printResult') {
-        final result = call.arguments as Map<String, String>;
-        showDialog(
-          context: context,
-          builder: (context) {
-            return AlertDialog(
-              title: Text(result['status'] ?? ''),
-              content: Text(result['message'] ?? ''),
-            );
-          },
-        );
-      }
-    });
-  }
-
+// Define a function to show dialogs in Flutter
   Future<void> showProgressDialog(BuildContext context, String message) async {
     return showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text("Printing Progress"),
+          title: Text("Printing Progress"),
           content: Text(message),
         );
       },
@@ -73,21 +48,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   _print() async {
-    printWithUsb(
-      """
-        <font size='big'>COMMANDE N 045</font>
-        ------------------------------------------
-        <b>PACK BOMBA</b>[R]20 000 MGA
-        <b>Qty:</b> 2
-        ------------------------------------------
-        <b>Coca 33cl</b>[R]3 000 MGA
-        <b>Qty:</b> 4
-        ------------------------------------------
-        <b><font size='big'>TOTAL :[R] 42 000 MGA</font></b>
-        ------------------------------------------
-        Merci de votre visite!
-      """,
-    );
+    printWithUsb('Dagocloud');
   }
 
   Future<void> printWithUsb(String contentToPrint) async {
@@ -100,6 +61,24 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    // Listen for method channel events
+    _platform.setMethodCallHandler((call) async {
+      if (call.method == 'printProgress') {
+        showProgressDialog(context, call.arguments);
+      } else if (call.method == 'printResult') {
+// Handle and display the result message
+        final result = call.arguments as Map<String, String>;
+        showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: Text(result['status'] ?? ''),
+              content: Text(result['message'] ?? ''),
+            );
+          },
+        );
+      }
+    });
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
